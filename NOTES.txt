@@ -1,0 +1,5 @@
+Parameters (like the value of @Params) is put in /META-INF/BenchmarkList by processing annotations at compile time.  It seems that rebuilding does not suffice to rebuild this in the .jar.  Doing a 'mvn clean' did seem to update the values in /META-INF/BenchmarkList.
+
+Doing a 'mvn test' does not currently run the test.  To do that run the jar file from intellij or command line:
+
+$JAVA_HOME/bin/java -XX:+EnablePrimitiveClasses -jar target/benchmarks.jar  |& tee /tmp/benchmark.out
