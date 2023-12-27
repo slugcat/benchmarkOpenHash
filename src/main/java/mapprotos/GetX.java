@@ -53,6 +53,7 @@ public class GetX extends MapBase {
 
         map = mapSupplier.apply(size);
         for (Integer k : keys) {
+            map.put(k, k);
         }
 
         mixed = new Integer[size];
@@ -90,6 +91,7 @@ public class GetX extends MapBase {
         for (Integer k : keys) {
             bh.consume(map.get(k));
         }
+        System.gc();
     }
 
 }

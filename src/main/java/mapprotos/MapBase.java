@@ -40,16 +40,17 @@ import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 
-@Fork(value = 1, jvmArgs = {"-XX:+EnablePrimitiveClasses"/*, "-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:5005"*/})
+@Fork(value = 1, jvmArgs = {"-XX:+EnablePrimitiveClasses"/*, "-Xms24g", "-Xmx24g", "-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:5005"*/})
 @OutputTimeUnit(TimeUnit.MICROSECONDS)
 @BenchmarkMode(Mode.AverageTime)
 @State(Scope.Thread)
 public class MapBase {
 
     @Param({
-            "11",
-            "767",
-            "1572863",
+//            "11",
+//            "767",
+//            "201326592", // Too much memory
+        "100663296"
     })
     public int size;
 
