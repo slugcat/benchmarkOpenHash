@@ -40,17 +40,19 @@ import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 
-@Fork(value = 1, jvmArgs = {"-XX:+EnablePrimitiveClasses"/*, "-Xms24g", "-Xmx24g", "-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:5005"*/})
+@Fork(value = 1, jvmArgs = {"-XX:+EnablePrimitiveClasses", /*TODO comment out "-Xms24g", "-Xmx24g", "-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:5005"*/})
 @OutputTimeUnit(TimeUnit.MICROSECONDS)
 @BenchmarkMode(Mode.AverageTime)
+@Warmup(iterations=3)
 @State(Scope.Thread)
 public class MapBase {
 
     @Param({
 //            "11",
 //            "767",
-//            "201326592", // Too much memory
-        "100663296"
+//            "201326592", // Didn't use Too much memory
+//        "100663296", //Used this to fill cpu caches with other data to get() would need to fetch from memory.
+        "1000000"
     })
     public int size;
 
@@ -82,7 +84,7 @@ public class MapBase {
             Collections.shuffle(Arrays.asList(all), rnd);
         } else {
             rnd = new Random();
-            all = IntStream.range(0, size * 2).boxed().toArray(Integer[]::new);
+            all = rnd.ints().distinct().limit(size * 2).boxed().toArray(Integer[]::new);
             Collections.shuffle(Arrays.asList(all));
         }
         keys = Arrays.copyOfRange(all, 0, size);

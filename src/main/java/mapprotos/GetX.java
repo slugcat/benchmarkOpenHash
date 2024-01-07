@@ -23,6 +23,7 @@
 package mapprotos;
 
 import org.openjdk.jmh.annotations.Benchmark;
+import org.openjdk.jmh.annotations.Level;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.TearDown;
 
@@ -62,7 +63,7 @@ public class GetX extends MapBase {
         Collections.shuffle(Arrays.asList(mixed), rnd);
     }
 
-    @TearDown
+    @TearDown(Level.Iteration)
     public void teardown() {
         super.TearDown(map);
     }
@@ -91,7 +92,6 @@ public class GetX extends MapBase {
         for (Integer k : keys) {
             bh.consume(map.get(k));
         }
-        System.gc();
     }
 
 }

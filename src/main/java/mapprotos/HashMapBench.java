@@ -48,14 +48,14 @@ import static java.util.stream.Collectors.toMap;
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
 @Fork(value = 1, jvmArgs = {"-XX:+EnablePrimitiveClasses"/*, "-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:5005"*/})
-//@Measurement(iterations = 2) // TODO change iterations
+// @Measurement(iterations = 2) // TODO change iterations
 // TODO run some test such that some thread(s) are hitting the cpu caches (does each cpu ever have its own cache?) so that the Map performance is more realistically impacted by not being in cache.
 @State(Scope.Thread)
 public class HashMapBench {
     private IntFunction<Map<Integer, Integer>> mapSupplier;
     private Map<Integer, Integer> bigMapToAdd;
 
-    @Param("1000000")
+    @Param("1000000") // TODO change this to exhaust cache
     private int size;
 
     @Param(value = {
