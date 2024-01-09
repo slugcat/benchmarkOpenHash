@@ -50,9 +50,10 @@ public class MapBase {
     @Param({
 //            "11",
 //            "767",
-//            "201326592", // Didn't use Too much memory
+//            "201326592", // Didn't use: Too much memory
 //        "100663296", //Used this to fill cpu caches with other data to get() would need to fetch from memory.
-        "1000000"
+        "50331648"
+//        "1000000"
     })
     public int size;
 
@@ -84,7 +85,7 @@ public class MapBase {
             Collections.shuffle(Arrays.asList(all), rnd);
         } else {
             rnd = new Random();
-            all = rnd.ints().distinct().limit(size * 2).boxed().toArray(Integer[]::new);
+            all = IntStream.range(0, size * 2).boxed().toArray(Integer[]::new);
             Collections.shuffle(Arrays.asList(all));
         }
         keys = Arrays.copyOfRange(all, 0, size);
