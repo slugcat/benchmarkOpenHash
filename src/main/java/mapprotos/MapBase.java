@@ -48,24 +48,26 @@ import java.util.stream.IntStream;
 public class MapBase {
 
     @Param({
-//            "11",
-//            "767",
-//            "201326592", // Didn't use: Too much memory
-//        "100663296", //Used this to fill cpu caches with other data to get() would need to fetch from memory.
-        "50331648"
-//        "1000000"
+//              "11",
+//             "767",
+        "120000" // Divisible by 3 fields and 4 bytes per field, per table Object overhead should be negligible
+//        "50331600", // the one just below this one seems like capacity is too big.  So try a little less than halfway to see the size & performance consequences
+//        "50331648", // this is halfway between two powers of 2
+//         "1000000"
+//     "100663296", //Used this to fill cpu caches with other data to get() would need to fetch from memory.
+//     "201326592", // Didn't use: Too much memory
     })
     public int size;
 
     @Param({
-//            "0",
+//           "0",
             "42",
     })
     public int seed;
 
     @Param(value = {
         "newhash.OpenHashMap",
-        "java.util.HashMap",
+        "mapprotos.HashMapCpy",
 //            "mapprotos.XHashMap",
 //            "org.openjdk.bench.valhalla.corelibs.mapprotos.HashMap",
 //            "org.openjdk.bench.valhalla.corelibs.mapprotos.XHashMap",
@@ -85,7 +87,8 @@ public class MapBase {
             Collections.shuffle(Arrays.asList(all), rnd);
         } else {
             rnd = new Random();
-            all = IntStream.range(0, size * 2).boxed().toArray(Integer[]::new);
+            all = rnd.ints().distinct().limit(size * 2).boxed().toArray(Integer[]::new);
+            //all = IntStream.range(0, size * 2).boxed().toArray(Integer[]::new);
             Collections.shuffle(Arrays.asList(all));
         }
         keys = Arrays.copyOfRange(all, 0, size);
