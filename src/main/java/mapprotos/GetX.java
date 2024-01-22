@@ -44,15 +44,18 @@ public class GetX extends MapBase {
     @Setup
     public void setup() {
         super.init(size);
+        float loadFactor = 4.5f;
+        int origSize = (int) (size / loadFactor) + 1;
         try {
             Class<?> mapClass = Class.forName(mapType);
-            mapSupplier =  (s) -> newInstance(mapClass, s);
+            System.out.println("loadFactor:" + loadFactor + " origSize:" + origSize);
+            mapSupplier = (s) -> newInstance(mapClass, s, loadFactor);
         } catch (Exception ex) {
             System.out.printf("%s: %s%n", mapType, ex.getMessage());
             return;
         }
 
-        map = mapSupplier.apply(size);
+        map = mapSupplier.apply(origSize);
         for (Integer k : keys) {
             map.put(k, k);
         }
@@ -68,9 +71,9 @@ public class GetX extends MapBase {
         super.TearDown(map);
     }
 
-    Map<Integer, Integer> newInstance(Class<?> mapClass, int size) {
+    Map<Integer, Integer> newInstance(Class<?> mapClass, int size, float loadFactor) {
         try {
-            return (Map<Integer, Integer>)mapClass.getConstructor(int.class).newInstance(size);
+            return (Map<Integer, Integer>)mapClass.getConstructor(int.class, float.class).newInstance(size, loadFactor);
         } catch (Exception ex) {
             throw new RuntimeException("failed", ex);
         }

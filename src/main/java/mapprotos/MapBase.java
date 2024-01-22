@@ -49,8 +49,8 @@ public class MapBase {
 
     @Param({
 //              "11",
-//             "767",
-        "120000" // Divisible by 3 fields and 4 bytes per field, per table Object overhead should be negligible
+             "767",
+//        "120000" // Divisible by 3 fields and 4 bytes per field, per table Object overhead should be negligible
 //        "50331600", // the one just below this one seems like capacity is too big.  So try a little less than halfway to see the size & performance consequences
 //        "50331648", // this is halfway between two powers of 2
 //         "1000000"
@@ -66,8 +66,9 @@ public class MapBase {
     public int seed;
 
     @Param(value = {
-        "newhash.OpenHashMap",
+//        "newhash.OpenHashMap",
         "mapprotos.HashMapCpy",
+        "mapprotos.ArrayBinHashMap",
 //            "mapprotos.XHashMap",
 //            "org.openjdk.bench.valhalla.corelibs.mapprotos.HashMap",
 //            "org.openjdk.bench.valhalla.corelibs.mapprotos.XHashMap",
