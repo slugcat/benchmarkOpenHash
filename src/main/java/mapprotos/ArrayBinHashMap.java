@@ -25,6 +25,8 @@
 
 package mapprotos;
 
+import newhash.OpenHashMap;
+
 import java.io.*;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
@@ -277,10 +279,10 @@ public class ArrayBinHashMap<K,V> extends AbstractMap<K,V>
      * Basic hash bin node, used for most entries.  (See below for
      * TreeNode subclass, and in LinkedHashMapCpy for its Entry subclass.)
      */
-    static /* TODO primitive mustMakeThis.value-final */ class Node<K,V> implements Entry<K,V> {
+    static /* TODO */  primitive  class Node<K,V> implements Entry<K,V> {
         final int hash;
         final K key;
-        V value; // TODO should be final
+        final V value;
 
         // TODO use (or add) an internal only mechanism to create an instance of a class that lacks a no-arg constructor.
         //  The resulting Object would be invalid, since it is not properly initialized, but if it were only ever used
@@ -288,6 +290,7 @@ public class ArrayBinHashMap<K,V> extends AbstractMap<K,V>
         //  Using this facility Node can be generic, since ABSENT would be in the proper class.  The alternative used here
         //  requires any returned key to be cast (at some runtime overhead) whenever it is returned :-(.
         static final Object NO_KEY = new Object();
+        static final Node EMPTY = new Node(0, null, null) /* TODO uncomment MaskedHashKeyValue.default*/;
 
         Node(int hash, K key, V value) {
             this.hash = hash;
@@ -304,9 +307,10 @@ public class ArrayBinHashMap<K,V> extends AbstractMap<K,V>
         }
 
         public final V setValue(V newValue) {
-            V oldValue = value;
-            value = newValue;
-            return oldValue;
+            throw new UnsupportedOperationException("Bad Thing!");// TODO uncomment if put & get jmh tests have promising results
+//            V oldValue = value;
+//            value = newValue;
+//            return oldValue;
         }
 
         public final boolean equals(Object o) {
@@ -576,7 +580,7 @@ public class ArrayBinHashMap<K,V> extends AbstractMap<K,V>
      * @return the node, or null if none
      */
     @SuppressWarnings("unchecked")
-    final Node<K,V> getNode(Object key) { // TODO How expensive is it to return the multi field primitive when caller only cares about one value?
+    final NodeRef<K,V> getNode(Object key) { // TODO How expensive is it to return the multi field primitive when caller only cares about one value?
         Object[] tab; Object binObj, e; int n, hash; K k;
         if ((tab = table) != null && (n = tab.length) > 0 &&
             (binObj = tab[(n - 1) & (hash = hash(key))]) != null) {
@@ -600,7 +604,7 @@ public class ArrayBinHashMap<K,V> extends AbstractMap<K,V>
 //                }
             }
         }
-        return null;
+        return Node.EMPTY;
     }
 
     /**
@@ -612,7 +616,7 @@ public class ArrayBinHashMap<K,V> extends AbstractMap<K,V>
      * key.
      */
     public boolean containsKey(Object key) {
-        return getNode(key) != null;
+        return getNode(key).key != null;
     }
 
     /**
@@ -685,7 +689,7 @@ public class ArrayBinHashMap<K,V> extends AbstractMap<K,V>
                     ((k = nodeRef.node.key) == key || (key != null && key.equals(k)))) {
                     V oldValue = nodeRef.node.value;
                     if (!onlyIfAbsent || oldValue == null)
-                        nodeRef.node.value = value;
+                        nodeRef.node = newNode(hash, key, value);
 //                    afterNodeAccess(nodeRef);
                     return oldValue;
                 }
@@ -700,7 +704,7 @@ public class ArrayBinHashMap<K,V> extends AbstractMap<K,V>
                         ++modCount;
                         V oldValue = nodes[b].value;
                         if (!onlyIfAbsent || oldValue == null)
-                            nodes[b].value = value;
+                            nodes[b] = newNode(hash, key, value);
 //                    afterNodeAccess(nodes[b]);
                         return oldValue;
                     }
@@ -886,9 +890,10 @@ public class ArrayBinHashMap<K,V> extends AbstractMap<K,V>
      *         previously associated {@code null} with {@code key}.)
      */
     public V remove(Object key) {
-        Node<K,V> e;
-        return (e = removeNode(hash(key), key, null, false, true)) == null ?
-            null : e.value;
+        throw new UnsupportedOperationException("Bad Thing!");// TODO uncomment if put & get jmh tests have promising results
+//        Node<K,V> e;
+//        return (e = removeNode(hash(key), key, null, false, true)) == null ?
+//            null : e.value;
     }
 
     /**
@@ -1081,7 +1086,8 @@ public class ArrayBinHashMap<K,V> extends AbstractMap<K,V>
         public final Iterator<K> iterator()     { return new KeyIterator(); }
         public final boolean contains(Object o) { return containsKey(o); }
         public final boolean remove(Object key) {
-            return removeNode(hash(key), key, null, false, true) != null;
+            throw new UnsupportedOperationException("Bad Thing!");// TODO uncomment if put & get jmh tests have promising results
+//            return removeNode(hash(key), key, null, false, true) != null;
         }
         public final Spliterator<K> spliterator() {
             return new KeySpliterator<>(ArrayBinHashMap.this, 0, -1, 0, 0);
@@ -1198,19 +1204,20 @@ public class ArrayBinHashMap<K,V> extends AbstractMap<K,V>
             return new EntryIterator();
         }
         public final boolean contains(Object o) {
-            if (!(o instanceof Map.Entry<?, ?> e))
-                return false;
-            Object key = e.getKey();
-            Node<K,V> candidate = getNode(key);
-            return candidate != null && candidate.equals(e);
+            throw new UnsupportedOperationException("Bad Thing!");// TODO uncomment if put & get jmh tests have promising results
+//            if (!(o instanceof Map.Entry<?, ?> e))
+//                return false;
+//            Object key = e.getKey();
+//            Node<K,V> candidate = getNode(key);
+//            return candidate != null && candidate.equals(e);
         }
         public final boolean remove(Object o) {
-            if (o instanceof Map.Entry<?, ?> e) {
-                Object key = e.getKey();
-                Object value = e.getValue();
-                return removeNode(hash(key), key, value, true, true) != null;
-            }
-            return false;
+            throw new UnsupportedOperationException("Bad Thing!");// TODO uncomment if put & get jmh tests have promising results
+//                Object key = e.getKey();
+//                Object value = e.getValue();
+//                return removeNode(hash(key), key, value, true, true) != null;
+//            }
+//            return false;
         }
         public final Spliterator<Entry<K,V>> spliterator() {
             return new EntrySpliterator<>(ArrayBinHashMap.this, 0, -1, 0, 0);
@@ -1236,8 +1243,9 @@ public class ArrayBinHashMap<K,V> extends AbstractMap<K,V>
 
     @Override
     public V getOrDefault(Object key, V defaultValue) {
-        Node<K,V> e;
-        return (e = getNode(key)) == null ? defaultValue : e.value;
+        throw new UnsupportedOperationException("Bad Thing!");// TODO uncomment if put & get jmh tests have promising results
+//        Node<K,V> e;
+//        return (e = getNode(key)) == null ? defaultValue : e.value;
     }
 
     @Override
@@ -1247,31 +1255,34 @@ public class ArrayBinHashMap<K,V> extends AbstractMap<K,V>
 
     @Override
     public boolean remove(Object key, Object value) {
-        return removeNode(hash(key), key, value, true, true) != null;
+        throw new UnsupportedOperationException("Bad Thing!");// TODO uncomment if put & get jmh tests have promising results
+//        return removeNode(hash(key), key, value, true, true) != null;
     }
 
     @Override
     public boolean replace(K key, V oldValue, V newValue) {
-        Node<K,V> e; V v;
-        if ((e = getNode(key)) != null &&
-            ((v = e.value) == oldValue || (v != null && v.equals(oldValue)))) {
-            e.value = newValue;
-            afterNodeAccess(e);
-            return true;
-        }
-        return false;
+        throw new UnsupportedOperationException("not done yet");
+//        Node<K,V> e; V v;
+//        if ((e = getNode(key)) != null &&
+//            ((v = e.value) == oldValue || (v != null && v.equals(oldValue)))) {
+//            e.value = newValue;
+//            afterNodeAccess(e);
+//            return true;
+//        }
+//        return false;
     }
 
     @Override
     public V replace(K key, V value) {
-        Node<K,V> e;
-        if ((e = getNode(key)) != null) {
-            V oldValue = e.value;
-            e.value = value;
-            afterNodeAccess(e);
-            return oldValue;
-        }
-        return null;
+        throw new UnsupportedOperationException("not done yet");
+//        Node<K,V> e;
+//        if ((e = getNode(key)) != null) {
+//            V oldValue = e.value;
+//            e.value = value;
+//            afterNodeAccess(e);
+//            return oldValue;
+//        }
+//        return null;
     }
 
     /**
@@ -1354,25 +1365,26 @@ public class ArrayBinHashMap<K,V> extends AbstractMap<K,V>
     @Override
     public V computeIfPresent(K key,
                               BiFunction<? super K, ? super V, ? extends V> remappingFunction) {
-        if (remappingFunction == null)
-            throw new NullPointerException();
-        Node<K,V> e; V oldValue;
-        if ((e = getNode(key)) != null &&
-            (oldValue = e.value) != null) {
-            int mc = modCount;
-            V v = remappingFunction.apply(key, oldValue);
-            if (mc != modCount) { throw new ConcurrentModificationException(); }
-            if (v != null) {
-                e.value = v;
-                afterNodeAccess(e);
-                return v;
-            }
-            else {
-                int hash = hash(key);
-                removeNode(hash, key, null, false, true);
-            }
-        }
-        return null;
+        throw new UnsupportedOperationException("Bad Thing!");// TODO uncomment if put & get jmh tests have promising results
+//        if (remappingFunction == null)
+//            throw new NullPointerException();
+//        Node<K,V> e; V oldValue;
+//        if ((e = getNode(key)) != null &&
+//            (oldValue = e.value) != null) {
+//            int mc = modCount;
+//            V v = remappingFunction.apply(key, oldValue);
+//            if (mc != modCount) { throw new ConcurrentModificationException(); }
+//            if (v != null) {
+//                e.value = v;
+//                afterNodeAccess(e);
+//                return v;
+//            }
+//            else {
+//                int hash = hash(key);
+//                removeNode(hash, key, null, false, true);
+//            }
+//        }
+//        return null;
     }
 
     /**
@@ -1697,7 +1709,8 @@ public class ArrayBinHashMap<K,V> extends AbstractMap<K,V>
         }
 
         public final boolean hasNext() {
-            return next != null;
+            throw new UnsupportedOperationException("Bad Thing!");// TODO uncomment if put & get jmh tests have promising results
+//            return next != null;
         }
 
         final Node<K,V> nextNode() {
@@ -1715,14 +1728,15 @@ public class ArrayBinHashMap<K,V> extends AbstractMap<K,V>
         }
 
         public final void remove() {
-            Node<K,V> p = current;
-            if (p == null)
-                throw new IllegalStateException();
-            if (modCount != expectedModCount)
-                throw new ConcurrentModificationException();
-            current = null;
-            removeNode(p.hash, p.key, null, false, false);
-            expectedModCount = modCount;
+            throw new UnsupportedOperationException("Bad Thing!");// TODO uncomment if put & get jmh tests have promising results
+//            Node<K,V> p = current;
+//            if (p == null)
+//                throw new IllegalStateException();
+//            if (modCount != expectedModCount)
+//                throw new ConcurrentModificationException();
+//            current = null;
+//            removeNode(p.hash, p.key, null, false, false);
+//            expectedModCount = modCount;
         }
     }
 
@@ -1790,10 +1804,11 @@ public class ArrayBinHashMap<K,V> extends AbstractMap<K,V>
         }
 
         public KeySpliterator<K,V> trySplit() {
-            int hi = getFence(), lo = index, mid = (lo + hi) >>> 1;
-            return (lo >= mid || current != null) ? null :
-                new KeySpliterator<>(map, lo, index = mid, est >>>= 1,
-                                        expectedModCount);
+            throw new UnsupportedOperationException("Bad Thing!");// TODO uncomment if put & get jmh tests have promising results
+//            int hi = getFence(), lo = index, mid = (lo + hi) >>> 1;
+//            return (lo >= mid || current != null) ? null :
+//                new KeySpliterator<>(map, lo, index = mid, est >>>= 1,
+//                                        expectedModCount);
         }
 
         public void forEachRemaining(Consumer<? super K> action) {
@@ -1864,10 +1879,11 @@ public class ArrayBinHashMap<K,V> extends AbstractMap<K,V>
         }
 
         public ValueSpliterator<K,V> trySplit() {
-            int hi = getFence(), lo = index, mid = (lo + hi) >>> 1;
-            return (lo >= mid || current != null) ? null :
-                new ValueSpliterator<>(map, lo, index = mid, est >>>= 1,
-                                          expectedModCount);
+            throw new UnsupportedOperationException("Bad Thing!");// TODO uncomment if put & get jmh tests have promising results
+//            int hi = getFence(), lo = index, mid = (lo + hi) >>> 1;
+//            return (lo >= mid || current != null) ? null :
+//                new ValueSpliterator<>(map, lo, index = mid, est >>>= 1,
+//                                          expectedModCount);
         }
 
         public void forEachRemaining(Consumer<? super V> action) {
@@ -1937,10 +1953,11 @@ public class ArrayBinHashMap<K,V> extends AbstractMap<K,V>
         }
 
         public EntrySpliterator<K,V> trySplit() {
-            int hi = getFence(), lo = index, mid = (lo + hi) >>> 1;
-            return (lo >= mid || current != null) ? null :
-                new EntrySpliterator<>(map, lo, index = mid, est >>>= 1,
-                                          expectedModCount);
+            throw new UnsupportedOperationException("Bad Thing!");// TODO uncomment if put & get jmh tests have promising results
+//            int hi = getFence(), lo = index, mid = (lo + hi) >>> 1;
+//            return (lo >= mid || current != null) ? null :
+//                new EntrySpliterator<>(map, lo, index = mid, est >>>= 1,
+//                                          expectedModCount);
         }
 
         public void forEachRemaining(Consumer<? super Entry<K,V>> action) {
