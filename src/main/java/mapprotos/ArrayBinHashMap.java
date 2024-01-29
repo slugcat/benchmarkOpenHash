@@ -277,10 +277,10 @@ public class ArrayBinHashMap<K,V> extends AbstractMap<K,V>
      * Basic hash bin node, used for most entries.  (See below for
      * TreeNode subclass, and in LinkedHashMapCpy for its Entry subclass.)
      */
-    static /* TODO primitive*/ class Node<K,V> implements Entry<K,V> {
+    static /* TODO primitive mustMakeThis.value-final */ class Node<K,V> implements Entry<K,V> {
         final int hash;
         final K key;
-        V value;
+        V value; // TODO should be final
 
         // TODO use (or add) an internal only mechanism to create an instance of a class that lacks a no-arg constructor.
         //  The resulting Object would be invalid, since it is not properly initialized, but if it were only ever used
@@ -391,7 +391,7 @@ public class ArrayBinHashMap<K,V> extends AbstractMap<K,V>
      * (We also tolerate length zero in some operations to allow
      * bootstrapping mechanics that are currently not needed.)
      */
-    transient Node<K,V>[][] table;
+    transient Object[] table;
 
     /**
      * Holds cached entrySet(). Note that AbstractMap fields are used
@@ -575,15 +575,20 @@ public class ArrayBinHashMap<K,V> extends AbstractMap<K,V>
      * @param key the key
      * @return the node, or null if none
      */
+    @SuppressWarnings("unchecked")
     final Node<K,V> getNode(Object key) { // TODO How expensive is it to return the multi field primitive when caller only cares about one value?
-        Node<K,V>[][] tab; Node<K,V>[] binObj, e; int n, hash; K k;
+        Object[] tab; Object binObj, e; int n, hash; K k;
         if ((tab = table) != null && (n = tab.length) > 0 &&
             (binObj = tab[(n - 1) & (hash = hash(key))]) != null) {
-            for (int b = 0; b < binObj.length; b++) {
-                if (binObj[b].hash == hash && // always check bin node
-                    ((k = binObj[b].key) == key || (key != null && key.equals(k))))
-                    return binObj[b];
-                // TODO uncomment to handle single Node bins (as opposed to Node[])
+            if (binObj.getClass() == NodeRef.class) {
+                return ((NodeRef<K,V>) binObj).node;
+            }
+            Node<K,V>[] nodes = (Node<K, V>[]) binObj;
+            for (int b = 0; b < nodes.length; b++) {
+                if (nodes[b].hash == hash && // always check bin node
+                    ((k = nodes[b].key) == key || (key != null && key.equals(k))))
+                    return nodes[b];
+                // TODO uncomment to TreeNode
 //                if ((e = bin.next) != null) {
 //                    if (bin instanceof TreeNode)
 //                        return ((TreeNode<K,V>)bin).getTreeNode(hash, key);
@@ -647,22 +652,22 @@ public class ArrayBinHashMap<K,V> extends AbstractMap<K,V>
     //  Note that get() when starting at the end will probably have a cache miss that the starting at the beginning won't have.
     final V putVal(int hash, K key, V value, boolean onlyIfAbsent,
                    boolean evict) {
-        Node[][] tab;
+        Object[] tab;
         int n;
         if ((tab = table) == null || (n = tab.length) == 0) // TODO find out why a 0 length table occurs.
             n = (tab = resize()).length;
         for (;;) {
-            Node[] bin;
+            Object binObj;
             int i;
-            if ((bin = tab[i = (n - 1) & hash]) == null) {
+            if ((binObj = tab[i = (n - 1) & hash]) == null) {
                 // Note that unlike HashMap this does not resize the 'table' when an empty element of 'table' is null.  The
                 // purpose of enlarging 'table' is to reduce collisions, but there is no collision in this case.  This
                 // avoids enlarging 'table' when such an enlargement will not speed up get() or iteration.
                 // TODO try to suppress the unchecked warning
-                tab[i] = new Node[]{newNode(hash, key, value)}; // TODO consider alternative where if there is only one node make it not be an array but a simple node
+                tab[i] = new NodeRef(hash, key, value);
                 ++modCount;
                 ++size;
-                afterNodeInsertion(evict);
+//                afterNodeInsertion(evict);
                 return null;
             }
             // TODO consider adding a TreeNode capability in addition to Node directly in tab[x].
@@ -673,31 +678,49 @@ public class ArrayBinHashMap<K,V> extends AbstractMap<K,V>
             //  worse for put() but maybe better for get().  If this class is to be used in
             //  get() dominated contexts, it might be a fair tradeoff.
             Object k;
-            int binLen = bin.length;
-            for (int b = 0; b < binLen; ++b) {
-                if (bin[b].hash == hash &&
-                    ((k = bin[b].key) == key || (key != null && key.equals(k)))) {
-                    ++modCount;
-                    Object oldValue = bin[b].value;
+            if (binObj.getClass() == NodeRef.class) {
+                @SuppressWarnings("unchecked")
+                NodeRef<K,V> nodeRef = (NodeRef<K,V>) binObj;
+                if (nodeRef.node.hash == hash &&
+                    ((k = nodeRef.node.key) == key || (key != null && key.equals(k)))) {
+                    V oldValue = nodeRef.node.value;
                     if (!onlyIfAbsent || oldValue == null)
-                        bin[b].value = value;
-                    afterNodeAccess(bin[b]);
-                    return (V) oldValue;
+                        nodeRef.node.value = value;
+//                    afterNodeAccess(nodeRef);
+                    return oldValue;
                 }
+                tab[i] = new Node[]{new Node<>(hash, key, value), nodeRef.node};
+            } else {
+                @SuppressWarnings("unchecked")
+                Node<K, V>[] nodes = (Node<K, V>[]) binObj;
+                int binLen = nodes.length;
+                for (int b = 0; b < binLen; ++b) {
+                    if (nodes[b].hash == hash &&
+                        ((k = nodes[b].key) == key || (key != null && key.equals(k)))) {
+                        ++modCount;
+                        V oldValue = nodes[b].value;
+                        if (!onlyIfAbsent || oldValue == null)
+                            nodes[b].value = value;
+//                    afterNodeAccess(nodes[b]);
+                        return oldValue;
+                    }
+                }
+                // Key not present
+                Node[] newBin = new Node[binLen+1];
+                System.arraycopy(nodes, 0, newBin, 0, binLen);
+                newBin[binLen] = newNode(hash, key, value);
+//            afterNodeInsertion(evict);
+                tab[i] = newBin;
+
             }
-            // Key not present
+
             ++modCount;
-            if (size+1 > threshold) {
+            if (++size > threshold) {
                 tab = resize();
                 // Since Entrys can't simply be moved (as they can for HashMap), it makes sense to only add the new Entry after resize.
                 // This is like IdentityHashMap.
                 continue;
             }
-            Node[] newBin = new Node[binLen+1];
-            System.arraycopy(bin, 0, newBin, 0, binLen);
-            newBin[binLen] = newNode(hash, key, value);
-            afterNodeInsertion(evict);
-            tab[i] = newBin;
             return null;
         }
     }
@@ -711,8 +734,9 @@ public class ArrayBinHashMap<K,V> extends AbstractMap<K,V>
      *
      * @return the table
      */
-    final Node<K,V>[][] resize() {
-        Node<K,V>[][] oldTab = table;
+    @SuppressWarnings("rawtypes")
+    final Object[] resize() {
+        Object[] oldTab = table;
         int oldCap = (oldTab == null) ? 0 : oldTab.length;
         int oldThr = threshold;
         int newCap, newThr = 0;
@@ -737,59 +761,81 @@ public class ArrayBinHashMap<K,V> extends AbstractMap<K,V>
                       (int)ft : Integer.MAX_VALUE);
         }
         threshold = newThr;
-        @SuppressWarnings({"rawtypes","unchecked"})
-        Node<K,V>[][] newTab = (Node<K,V>[][])new Node[newCap][];
+        Object[] newTab = new Object[newCap];
         table = newTab;
         if (oldTab != null) {
             for (int ot = 0; ot < oldCap; ++ot) { // 'ot' old table
-                Node<K,V>[] oldBin;
-                int newTabIndex = ot << 1;
-                int newModulo = newCap - 1;
+                Object oldBin;
+                int movingTabIndex = ot + oldCap;
                 if ((oldBin = oldTab[ot]) != null) {
-                    splitBin(oldCap, newTab, oldBin, ot);
+                    oldTab[ot] = null;
+                    if (oldBin.getClass() == NodeRef.class) {
+                        newTab[(newCap - 1) & ((NodeRef) oldBin).node.hash] = oldBin;
+                    } else {
+                        int numStaying = 0;
+                        Node[] oldArrayBin = (Node[]) oldBin;
+                        int oldBinLen = oldArrayBin.length;
+                        int lastNumStayingIndex = 0;
+                        int lastNumMovingIndex = 0;
+                        for (int i = 0; i < oldBinLen; i++) {
+                            if ((oldArrayBin[i].hash & oldCap) == 0) {
+                                ++numStaying;
+                                lastNumStayingIndex = i;
+                            } else {
+                                lastNumMovingIndex = i;
+                            }
+                        }
+                        if (numStaying == oldBinLen) {
+                            newTab[ot] = oldArrayBin;
+                        } else if (numStaying == 0) {
+                            newTab[movingTabIndex] = oldArrayBin;
+                        } else {
+                            int numMoving = oldBinLen - numStaying;
+                            if (numStaying == 1) {
+                                if (numMoving == 1) {
+                                    newTab[ot] = new NodeRef(oldArrayBin[lastNumStayingIndex]);
+                                    newTab[movingTabIndex] = new NodeRef(oldArrayBin[lastNumMovingIndex]);
+                                } else {
+                                    rehashArrayBinOneOfManyHasDifferentIndex(oldBinLen, oldArrayBin, lastNumStayingIndex, ot, movingTabIndex, newTab);
+                                }
+                            } else if (numMoving == 1) {
+                                rehashArrayBinOneOfManyHasDifferentIndex(oldBinLen, oldArrayBin, lastNumMovingIndex, movingTabIndex, ot, newTab);
+                            } else { // Multiple staying, multiple moving
+                                Node[] stayingBin = new Node[numStaying];
+                                Node[] movingBin = new Node[numMoving];
+                                int stayingBinIndex = 0, movingBinIndex = 0;
+                                for (int i = 0; i < oldBinLen; i++) {
+                                    if ((oldArrayBin[i].hash & oldCap) == 0) {
+                                        stayingBin[stayingBinIndex++] = oldArrayBin[i];
+                                    } else {
+                                        movingBin[movingBinIndex++] = oldArrayBin[i];
+                                    }
+                                }
+                                newTab[ot] = stayingBin;
+                                newTab[movingTabIndex] = movingBin;
+                            }
+                        }
+
+                        // TODO chose not to preserve order (but maybe did anyway?).  I can't see any benefit.
+                        // TODO when can handle non-full bins, move entries in same array instead (Look at old
+                        //  Bard chat), Whichever has more moving, or staying will use oldBin (so if moving uses
+                        //  oldBin then newTab[oldTabIndex] = newBin; newTab[movingTabIndex] = oldBin;)
+                    }
                 }
             }
         }
+        table = newTab;
         return newTab;
     }
 
-    // TODO Once settled, inline
-    public static void splitBin(int oldCap, Node[][] newTab, Node[] oldBin, int oldTabIndex) {
-        int newTabIndex = oldCap << 1;
-        int newModulo = newTabIndex - 1;
-        int numStaying = 0;
-        int oldLen = oldBin.length;
-        for (int i = 0; i < oldLen; i++) {
-            if ((oldBin[i].hash & newModulo) == oldTabIndex) {
-                ++numStaying;
-                // TODO maybe keep track of the first and last one moving. to loop through fewer in next loop
-            }
-        }
-        if (numStaying == oldLen) {
-            newTab[oldTabIndex] = oldBin;
-            return;
-        }
-        if(numStaying == 0) {
-            newTab[newTabIndex] = oldBin;
-            return;
-        }
 
-        // TODO chose not to preserve order.  I can't see any benefit.
-        // TODO when can handle non-full bins, move entries in same array instead (Look at old
-        //  Bard chat), Whichever has more moving, or staying will use oldBin (so if moving uses
-        //  oldBin then newTab[oldTabIndex] = newBin; newTab[newTabIndex] = oldBin;)
-        Node[] stayingBin = new Node[numStaying];
-        Node[] movingBin = new Node[oldLen - numStaying];
-        int stayingIndex = 0, movingIndex = 0;
-        for (int i = 0; i < oldLen; i++) {
-            if ((oldBin[i].hash & newModulo) == oldTabIndex) {
-                stayingBin[stayingIndex] = oldBin[i];
-            } else {
-                movingBin[movingIndex] = oldBin[i];
-            }
-        }
-        newTab[oldTabIndex] = stayingBin;
-        newTab[newTabIndex] = movingBin;
+    @SuppressWarnings("rawtypes")
+    private static <K, V> void rehashArrayBinOneOfManyHasDifferentIndex(int oldBinLen, Node[] oldArrayBin, int oldBinIndexForOne, int newTabIndexForOne, int newTabIndexForMany, Object[] newTab) {
+        Node[] newManyArrayBin = new Node[oldBinLen-1];
+        newTab[newTabIndexForOne] = new NodeRef(oldArrayBin[oldBinIndexForOne]);
+        System.arraycopy(oldArrayBin, 0, newManyArrayBin, 0, oldBinIndexForOne);
+        System.arraycopy(oldArrayBin, oldBinIndexForOne+1, newManyArrayBin, oldBinIndexForOne, oldBinLen-oldBinIndexForOne-1);
+        newTab[newTabIndexForMany] = newManyArrayBin;
     }
 
     /**
@@ -902,7 +948,7 @@ public class ArrayBinHashMap<K,V> extends AbstractMap<K,V>
      * The map will be empty after this call returns.
      */
     public void clear() {
-        Node<K,V>[][] tab;
+        Object[] tab;
         modCount++;
         if ((tab = table) != null && size > 0) {
             size = 0;
@@ -2004,9 +2050,10 @@ public class ArrayBinHashMap<K,V> extends AbstractMap<K,V>
     }
 
     // Callbacks to allow LinkedHashMapCpy post-actions
+// TODO remove these?
     void afterNodeAccess(Node<K,V> p) { }
-    void afterNodeInsertion(boolean evict) { }
-    void afterNodeRemoval(Node<K,V> p) { }
+//    void afterNodeInsertion(boolean evict) { }
+//    void afterNodeRemoval(Node<K,V> p) { }
 
     // Called only from writeObject, to ensure compatible ordering.
     void internalWriteEntries(ObjectOutputStream s) throws IOException {
@@ -2667,23 +2714,24 @@ public class ArrayBinHashMap<K,V> extends AbstractMap<K,V>
 
     private long[] entryTypes() {
         long[] counts = new long[3];
-        for (Node<K,V>[] te : table) {
+        for (Object te : table) {
             counts[te!=null ? 1 : 0]++; // TODO changed but not verified
         }
         return counts;
     }
 
     // Returns a histogram array of the number of rehashs needed to find each key.
+    @SuppressWarnings("rawtypes")
     private int[] entryRehashes() {
         int[] counts = new int[table.length + 1];
-        Node<K,V>[][] tab = table;
-        for (Node<K,V>[] bin : tab) {
+        Object[] tab = table;
+        for (Object bin : tab) {
             if (bin != null) { // TODO changed but not verified
-                int count = 0;
-                for (int b = 0; b < bin.length; b++) {
-                    count++;
+                if (bin.getClass() == NodeRef.class) {
+                    counts[1]++;
+                } else {
+                    counts[((NodeRef[]) bin).length]++;
                 }
-                counts[count]++;
             }
         }
 
@@ -2698,11 +2746,17 @@ public class ArrayBinHashMap<K,V> extends AbstractMap<K,V>
         long acc = objectSizeMaybe(this);
         acc += objectSizeMaybe(table);
 
-        Node<K,V>[][] tab = table;
-        for (Node<K,V>[] bin : tab) {
+        Object[] tab = table;
+        for (Object bin : tab) {
             // TODO doesn't handle TreeNodes
             if (bin != null)
-                acc += objectSizeMaybe(bin);
+                if (bin.getClass() == NodeRef.class) {
+                    acc += objectSizeMaybe(bin);
+                } else {
+                    for(Node<K,V> node : (Node<K,V>[])bin) {
+                        acc += objectSizeMaybe(node);
+                    }
+                }
         }
         return acc;
     }
@@ -2730,5 +2784,18 @@ public class ArrayBinHashMap<K,V> extends AbstractMap<K,V>
         }
     }
 
+    private static class NodeRef<K,V> {
+        Node<K,V> node; // TODO not sure if this is the best way to do this.  For Value Objects it is possible to have a reference, so maybe SingleNode would just be a reference to Node, but I'm not sure that's what "reference" means for value Objects
+
+        NodeRef(int hash, K key, V value) {
+            node = new Node<>(hash, key, value);
+        }
+
+        @SuppressWarnings({"rawtypes", "unchecked"})
+        NodeRef(Node node) {
+            this.node = node;
+        }
+
+    }
 }
 

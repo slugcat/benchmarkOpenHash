@@ -2603,7 +2603,7 @@ public class HashMapCpy<K,V> extends AbstractMap<K,V>
     private long[] entryTypes() {
         long[] counts = new long[3];
         for (Node<K,V> te : table) {
-            counts[te!=null ? 1 : 0]++;
+            counts[te!=null ? 1 : 0]++; // TODO changed but not verified
         }
         return counts;
     }
@@ -2613,7 +2613,7 @@ public class HashMapCpy<K,V> extends AbstractMap<K,V>
         int[] counts = new int[table.length + 1];
         Node<K,V>[] tab = table;
         for (Node<K,V> te : tab) {
-            if (te != null) {
+            if (te != null) { // TODO changed but not verified
                 int count = 0;
                 for (Node<K, V> e = te.next; e != null; e = e.next)
                     count++;
