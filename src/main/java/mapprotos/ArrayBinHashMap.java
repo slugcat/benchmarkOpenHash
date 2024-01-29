@@ -568,8 +568,8 @@ public class ArrayBinHashMap<K,V> extends AbstractMap<K,V>
      * @see #put(Object, Object)
      */
     public V get(Object key) {
-        Node<K,V> e;
-        return (e = getNode(key)) == null ? null : e.value;
+        NodeRef<K,V> e;
+        return (e = getNode(key)) == null ? null : e.node.value;
     }
 
 
@@ -585,13 +585,13 @@ public class ArrayBinHashMap<K,V> extends AbstractMap<K,V>
         if ((tab = table) != null && (n = tab.length) > 0 &&
             (binObj = tab[(n - 1) & (hash = hash(key))]) != null) {
             if (binObj.getClass() == NodeRef.class) {
-                return ((NodeRef<K,V>) binObj).node;
+                return ((NodeRef<K,V>) binObj);
             }
             Node<K,V>[] nodes = (Node<K, V>[]) binObj;
             for (int b = 0; b < nodes.length; b++) {
                 if (nodes[b].hash == hash && // always check bin node
                     ((k = nodes[b].key) == key || (key != null && key.equals(k))))
-                    return nodes[b];
+                    return new NodeRef<>(nodes[b]);
                 // TODO uncomment to TreeNode
 //                if ((e = bin.next) != null) {
 //                    if (bin instanceof TreeNode)
@@ -604,7 +604,7 @@ public class ArrayBinHashMap<K,V> extends AbstractMap<K,V>
 //                }
             }
         }
-        return Node.EMPTY;
+        return null;
     }
 
     /**
@@ -616,7 +616,7 @@ public class ArrayBinHashMap<K,V> extends AbstractMap<K,V>
      * key.
      */
     public boolean containsKey(Object key) {
-        return getNode(key).key != null;
+        return getNode(key).node.key != null;
     }
 
     /**
