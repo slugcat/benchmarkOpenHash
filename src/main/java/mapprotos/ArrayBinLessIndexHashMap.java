@@ -25,8 +25,6 @@
 
 package mapprotos;
 
-import newhash.OpenHashMap;
-
 import java.io.*;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
@@ -137,7 +135,7 @@ import java.util.function.Function;
  * @see     Hashtable
  * @since   1.2
  */
-public class ArrayBinHashMap<K,V> extends AbstractMap<K,V>
+public class ArrayBinLessIndexHashMap<K,V> extends AbstractMap<K,V>
     implements Map<K,V>, Cloneable, Serializable {
 
     @Serial
@@ -450,7 +448,7 @@ public class ArrayBinHashMap<K,V> extends AbstractMap<K,V>
      * @throws IllegalArgumentException if the initial capacity is negative
      *         or the load factor is nonpositive
      */
-    public ArrayBinHashMap(int initialCapacity, float loadFactor) {
+    public ArrayBinLessIndexHashMap(int initialCapacity, float loadFactor) {
         if (initialCapacity < 0)
             throw new IllegalArgumentException("Illegal initial capacity: " +
                                                initialCapacity);
@@ -474,7 +472,7 @@ public class ArrayBinHashMap<K,V> extends AbstractMap<K,V>
      * @param  initialCapacity the initial capacity.
      * @throws IllegalArgumentException if the initial capacity is negative.
      */
-    public ArrayBinHashMap(int initialCapacity) {
+    public ArrayBinLessIndexHashMap(int initialCapacity) {
         this(initialCapacity, DEFAULT_LOAD_FACTOR);
     }
 
@@ -482,7 +480,7 @@ public class ArrayBinHashMap<K,V> extends AbstractMap<K,V>
      * Constructs an empty {@code HashMap} with the default initial capacity
      * (16) and the default load factor (0.75).
      */
-    public ArrayBinHashMap() {
+    public ArrayBinLessIndexHashMap() {
         this.loadFactor = DEFAULT_LOAD_FACTOR; // all other fields defaulted
     }
 
@@ -495,7 +493,7 @@ public class ArrayBinHashMap<K,V> extends AbstractMap<K,V>
      * @param   m the map whose mappings are to be placed in this map
      * @throws  NullPointerException if the specified map is null
      */
-    public ArrayBinHashMap(Map<? extends K, ? extends V> m) {
+    public ArrayBinLessIndexHashMap(Map<? extends K, ? extends V> m) {
         this.loadFactor = DEFAULT_LOAD_FACTOR;
         putMapEntries(m, false);
     }
@@ -578,10 +576,11 @@ public class ArrayBinHashMap<K,V> extends AbstractMap<K,V>
             }
             Node<K,V>[] nodes = (Node<K, V>[]) binObj;
             for (int b = 0; b < nodes.length; b++) {
-                if (nodes[b].hash == hash &&
-                    ((k = nodes[b].key) == key || (key != null && key.equals(k))))
-                    return nodes[b].value;
-                // TODO uncomment to TreeNode
+                Node<K,V> node;
+                if ((node=nodes[b]).hash == hash &&
+                    ((k = node.key) == key || (key != null && key.equals(k))))
+                    return node.value;
+                // TODO uncomment to allow TreeNode
 //                if ((e = bin.next) != null) {
 //                    if (bin instanceof TreeNode)
 //                        return ((TreeNode<K,V>)bin).getTreeNode(hash, key);
@@ -1110,7 +1109,7 @@ public class ArrayBinHashMap<K,V> extends AbstractMap<K,V>
 
     final class KeySet extends AbstractSet<K> {
         public final int size()                 { return size; }
-        public final void clear()               { ArrayBinHashMap.this.clear(); }
+        public final void clear()               { ArrayBinLessIndexHashMap.this.clear(); }
         public final Iterator<K> iterator()     { return new KeyIterator(); }
         public final boolean contains(Object o) { return containsKey(o); }
         public final boolean remove(Object key) {
@@ -1118,7 +1117,7 @@ public class ArrayBinHashMap<K,V> extends AbstractMap<K,V>
 //            return removeNode(hash(key), key, null, false, true) != null;
         }
         public final Spliterator<K> spliterator() {
-            return new KeySpliterator<>(ArrayBinHashMap.this, 0, -1, 0, 0);
+            return new KeySpliterator<>(ArrayBinLessIndexHashMap.this, 0, -1, 0, 0);
         }
 
         public Object[] toArray() {
@@ -1173,11 +1172,11 @@ public class ArrayBinHashMap<K,V> extends AbstractMap<K,V>
 
     final class Values extends AbstractCollection<V> {
         public final int size()                 { return size; }
-        public final void clear()               { ArrayBinHashMap.this.clear(); }
+        public final void clear()               { ArrayBinLessIndexHashMap.this.clear(); }
         public final Iterator<V> iterator()     { return new ValueIterator(); }
         public final boolean contains(Object o) { return containsValue(o); }
         public final Spliterator<V> spliterator() {
-            return new ValueSpliterator<>(ArrayBinHashMap.this, 0, -1, 0, 0);
+            return new ValueSpliterator<>(ArrayBinLessIndexHashMap.this, 0, -1, 0, 0);
         }
 
         public Object[] toArray() {
@@ -1227,7 +1226,7 @@ public class ArrayBinHashMap<K,V> extends AbstractMap<K,V>
 
     final class EntrySet extends AbstractSet<Entry<K,V>> {
         public final int size()                 { return size; }
-        public final void clear()               { ArrayBinHashMap.this.clear(); }
+        public final void clear()               { ArrayBinLessIndexHashMap.this.clear(); }
         public final Iterator<Entry<K,V>> iterator() {
             return new EntryIterator();
         }
@@ -1248,7 +1247,7 @@ public class ArrayBinHashMap<K,V> extends AbstractMap<K,V>
 //            return false;
         }
         public final Spliterator<Entry<K,V>> spliterator() {
-            return new EntrySpliterator<>(ArrayBinHashMap.this, 0, -1, 0, 0);
+            return new EntrySpliterator<>(ArrayBinLessIndexHashMap.this, 0, -1, 0, 0);
         }
         public final void forEach(Consumer<? super Entry<K,V>> action) {
             Node<K,V>[] tab;
@@ -1600,9 +1599,9 @@ public class ArrayBinHashMap<K,V> extends AbstractMap<K,V>
     @SuppressWarnings("unchecked")
     @Override
     public Object clone() {
-        ArrayBinHashMap<K,V> result;
+        ArrayBinLessIndexHashMap<K,V> result;
         try {
-            result = (ArrayBinHashMap<K,V>)super.clone();
+            result = (ArrayBinLessIndexHashMap<K,V>)super.clone();
         } catch (CloneNotSupportedException e) {
             // this shouldn't happen, since we are Cloneable
             throw new InternalError(e);
@@ -1787,14 +1786,14 @@ public class ArrayBinHashMap<K,V> extends AbstractMap<K,V>
     // spliterators
 
     static class HashMapSpliterator<K,V> {
-        final ArrayBinHashMap<K,V> map;
+        final ArrayBinLessIndexHashMap<K,V> map;
         Node<K,V> current;          // current node
         int index;                  // current index, modified on advance/split
         int fence;                  // one past last index
         int est;                    // size estimate
         int expectedModCount;       // for comodification checks
 
-        HashMapSpliterator(ArrayBinHashMap<K,V> m, int origin,
+        HashMapSpliterator(ArrayBinLessIndexHashMap<K,V> m, int origin,
                            int fence, int est,
                            int expectedModCount) {
             this.map = m;
@@ -1826,7 +1825,7 @@ public class ArrayBinHashMap<K,V> extends AbstractMap<K,V>
     static final class KeySpliterator<K,V>
         extends HashMapSpliterator<K,V>
         implements Spliterator<K> {
-        KeySpliterator(ArrayBinHashMap<K,V> m, int origin, int fence, int est,
+        KeySpliterator(ArrayBinLessIndexHashMap<K,V> m, int origin, int fence, int est,
                        int expectedModCount) {
             super(m, origin, fence, est, expectedModCount);
         }
@@ -1901,7 +1900,7 @@ public class ArrayBinHashMap<K,V> extends AbstractMap<K,V>
     static final class ValueSpliterator<K,V>
         extends HashMapSpliterator<K,V>
         implements Spliterator<V> {
-        ValueSpliterator(ArrayBinHashMap<K,V> m, int origin, int fence, int est,
+        ValueSpliterator(ArrayBinLessIndexHashMap<K,V> m, int origin, int fence, int est,
                          int expectedModCount) {
             super(m, origin, fence, est, expectedModCount);
         }
@@ -1975,7 +1974,7 @@ public class ArrayBinHashMap<K,V> extends AbstractMap<K,V>
     static final class EntrySpliterator<K,V>
         extends HashMapSpliterator<K,V>
         implements Spliterator<Entry<K,V>> {
-        EntrySpliterator(ArrayBinHashMap<K,V> m, int origin, int fence, int est,
+        EntrySpliterator(ArrayBinLessIndexHashMap<K,V> m, int origin, int fence, int est,
                          int expectedModCount) {
             super(m, origin, fence, est, expectedModCount);
         }
@@ -2737,11 +2736,11 @@ public class ArrayBinHashMap<K,V> extends AbstractMap<K,V>
      * @throws IllegalArgumentException if numMappings is negative
      * @since 19
      */
-    public static <K, V> ArrayBinHashMap<K, V> newHashMap(int numMappings) {
+    public static <K, V> ArrayBinLessIndexHashMap<K, V> newHashMap(int numMappings) {
         if (numMappings < 0) {
             throw new IllegalArgumentException("Negative number of mappings: " + numMappings);
         }
-        return new ArrayBinHashMap<>(calculateHashMapCpyCapacity(numMappings));
+        return new ArrayBinLessIndexHashMap<>(calculateHashMapCpyCapacity(numMappings));
     }
 
     public void dumpStats(PrintStream out) {

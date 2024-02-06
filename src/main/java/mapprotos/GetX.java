@@ -44,7 +44,7 @@ public class GetX extends MapBase {
     @Setup
     public void setup() {
         super.init(size);
-        float loadFactor = 4.5f;
+        float loadFactor = 8.0f;
         int origSize = (int) (size / loadFactor) + 1;
         try {
             Class<?> mapClass = Class.forName(mapType);

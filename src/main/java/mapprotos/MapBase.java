@@ -67,8 +67,9 @@ public class MapBase {
 
     @Param(value = {
 //        "newhash.OpenHashMap",
-        "mapprotos.HashMapCpy",
+//        "mapprotos.HashMapCpy",
         "mapprotos.ArrayBinHashMap",
+        "mapprotos.ArrayBinLessIndexHashMap",
 //            "mapprotos.XHashMap",
 //            "org.openjdk.bench.valhalla.corelibs.mapprotos.HashMap",
 //            "org.openjdk.bench.valhalla.corelibs.mapprotos.XHashMap",
