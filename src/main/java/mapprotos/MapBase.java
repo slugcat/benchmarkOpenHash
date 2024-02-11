@@ -24,7 +24,6 @@ package mapprotos;
 
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;
-import org.openjdk.jmh.annotations.Measurement;
 import org.openjdk.jmh.annotations.Mode;
 import org.openjdk.jmh.annotations.OutputTimeUnit;
 import org.openjdk.jmh.annotations.Param;
@@ -49,8 +48,8 @@ public class MapBase {
 
     @Param({
 //              "11",
-             "767",
-//        "120000" // Divisible by 3 fields and 4 bytes per field, per table Object overhead should be negligible
+//             "767",
+        "1536" // Divisible by 3 fields and 4 bytes per field, per table Object overhead should be negligible. Half way to next resize.
 //        "50331600", // the one just below this one seems like capacity is too big.  So try a little less than halfway to see the size & performance consequences
 //        "50331648", // this is halfway between two powers of 2
 //         "1000000"
@@ -59,17 +58,17 @@ public class MapBase {
     })
     public int size;
 
-    @Param({
-//           "0",
-            "42",
-    })
-    public int seed;
+    // All trials have the same seed for each iteration.  However, each iteration has a different
+    // seed than its other iterations.  In this way it is hoped that each trial is more
+    // realistically warmed up with a variety of data and also that each trial has the same set
+    // of seeds to make fair comparisons at least a bit better.
+    private int seed;
 
     @Param(value = {
 //        "newhash.OpenHashMap",
-//        "mapprotos.HashMapCpy",
+        "mapprotos.HashMapCpy",
         "mapprotos.ArrayBinHashMap",
-        "mapprotos.ArrayBinLessIndexHashMap",
+//        "mapprotos.ArrayBinLessIndexHashMap",
 //            "mapprotos.XHashMap",
 //            "org.openjdk.bench.valhalla.corelibs.mapprotos.HashMap",
 //            "org.openjdk.bench.valhalla.corelibs.mapprotos.XHashMap",
@@ -81,17 +80,13 @@ public class MapBase {
     public Integer[] keys;
     public Integer[] nonKeys;
 
-    public void init(int size) {
+    public void initIteration(int size) {
+        System.out.println("CALLING MapBase.initIteration seed:" + seed);
         Integer[] all;
-        if (seed != 0) {
+        if (seed++ != 0) {
             rnd = new Random(seed);
             all = rnd.ints().distinct().limit(size * 2).boxed().toArray(Integer[]::new);
             Collections.shuffle(Arrays.asList(all), rnd);
-        } else {
-            rnd = new Random();
-            all = rnd.ints().distinct().limit(size * 2).boxed().toArray(Integer[]::new);
-            //all = IntStream.range(0, size * 2).boxed().toArray(Integer[]::new);
-            Collections.shuffle(Arrays.asList(all));
         }
         keys = Arrays.copyOfRange(all, 0, size);
         nonKeys = Arrays.copyOfRange(all, size, size * 2);

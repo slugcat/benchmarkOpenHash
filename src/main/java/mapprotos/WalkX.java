@@ -25,10 +25,8 @@ package mapprotos;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.CompilerControl;
 import org.openjdk.jmh.annotations.Setup;
-import org.openjdk.jmh.annotations.State;
 
 import java.util.Iterator;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.function.IntFunction;
 
@@ -39,7 +37,7 @@ public class WalkX extends MapBase {
 
     @Setup
     public void setup() {
-        super.init(size);
+        super.initIteration(size);
         try {
             Class<?> mapClass = Class.forName(mapType);
             mapSupplier =  (size) -> newInstance(mapClass, size);

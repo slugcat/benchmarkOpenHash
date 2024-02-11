@@ -27,7 +27,6 @@ import org.openjdk.jmh.annotations.Setup;
 
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.function.IntFunction;
 
@@ -38,7 +37,7 @@ public class ReplX extends MapBase {
 
     @Setup
     public void setup() {
-        super.init(size);
+        super.initIteration(size);
         try {
             Class<?> mapClass = Class.forName(mapType);
             mapSupplier =  (size) -> newInstance(mapClass, size);

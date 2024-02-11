@@ -31,7 +31,6 @@ import org.openjdk.jmh.infra.Blackhole;
 
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.function.IntFunction;
 
@@ -41,9 +40,14 @@ public class GetX extends MapBase {
     Map<Integer, Integer> map;
     Integer[] mixed;
 
-    @Setup
-    public void setup() {
-        super.init(size);
+    @Setup(Level.Trial)
+    public void setupTrial() {
+        super.initIteration(size);
+    }
+
+    @Setup(Level.Iteration)
+    public void setupIteration() {
+        super.initIteration(size);
         float loadFactor = 8.0f;
         int origSize = (int) (size / loadFactor) + 1;
         try {

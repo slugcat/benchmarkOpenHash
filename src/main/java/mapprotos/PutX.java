@@ -24,10 +24,8 @@ package mapprotos;
 
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Setup;
-import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.TearDown;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.function.IntFunction;
 
@@ -38,7 +36,7 @@ public class PutX extends MapBase {
 
     @Setup
     public void setup() {
-        super.init(size);
+        super.initIteration(size);
         try {
             Class<?> mapClass = Class.forName(mapType);
             mapSupplier =  (size) -> newInstance(mapClass, size);
