@@ -38,200 +38,11 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 //import jdk.internal.access.SharedSecrets;
 
-/**
- * Hash table based implementation of the {@code Map} interface.  This
- * implementation provides all of the optional map operations, and permits
- * {@code null} values and the {@code null} key.  (The {@code HashMap}
- * class is roughly equivalent to {@code Hashtable}, except that it is
- * unsynchronized and permits nulls.)  This class makes no guarantees as to
- * the order of the map; in particular, it does not guarantee that the order
- * will remain constant over time.
- *
- * <p>This implementation provides constant-time performance for the basic
- * operations ({@code get} and {@code put}), assuming the hash function
- * disperses the elements properly among the buckets.  Iteration over
- * collection views requires time proportional to the "capacity" of the
- * {@code HashMap} instance (the number of buckets) plus its size (the number
- * of key-value mappings).  Thus, it's very important not to set the initial
- * capacity too high (or the load factor too low) if iteration performance is
- * important.
- *
- * <p>An instance of {@code HashMap} has two parameters that affect its
- * performance: <i>initial capacity</i> and <i>load factor</i>.  The
- * <i>capacity</i> is the number of buckets in the hash table, and the initial
- * capacity is simply the capacity at the time the hash table is created.  The
- * <i>load factor</i> is a measure of how full the hash table is allowed to
- * get before its capacity is automatically increased.  When the number of
- * entries in the hash table exceeds the product of the load factor and the
- * current capacity, the hash table is <i>rehashed</i> (that is, internal data
- * structures are rebuilt) so that the hash table has approximately twice the
- * number of buckets.
- *
- * <p>As a general rule, the default load factor (.75) offers a good
- * tradeoff between time and space costs.  Higher values decrease the
- * space overhead but increase the lookup cost (reflected in most of
- * the operations of the {@code HashMap} class, including
- * {@code get} and {@code put}).  The expected number of entries in
- * the map and its load factor should be taken into account when
- * setting its initial capacity, so as to minimize the number of
- * rehash operations.  If the initial capacity is greater than the
- * maximum number of entries divided by the load factor, no rehash
- * operations will ever occur.
- *
- * <p>If many mappings are to be stored in a {@code HashMap}
- * instance, creating it with a sufficiently large capacity will allow
- * the mappings to be stored more efficiently than letting it perform
- * automatic rehashing as needed to grow the table.  Note that using
- * many keys with the same {@code hashCode()} is a sure way to slow
- * down performance of any hash table. To ameliorate impact, when keys
- * are {@link Comparable}, this class may use comparison order among
- * keys to help break ties.
- *
- * <p><strong>Note that this implementation is not synchronized.</strong>
- * If multiple threads access a hash map concurrently, and at least one of
- * the threads modifies the map structurally, it <i>must</i> be
- * synchronized externally.  (A structural modification is any operation
- * that adds or deletes one or more mappings; merely changing the value
- * associated with a key that an instance already contains is not a
- * structural modification.)  This is typically accomplished by
- * synchronizing on some object that naturally encapsulates the map.
- *
- * If no such object exists, the map should be "wrapped" using the
- * {@link Collections#synchronizedMap Collections.synchronizedMap}
- * method.  This is best done at creation time, to prevent accidental
- * unsynchronized access to the map:<pre>
- *   Map m = Collections.synchronizedMap(new HashMap(...));</pre>
- *
- * <p>The iterators returned by all of this class's "collection view methods"
- * are <i>fail-fast</i>: if the map is structurally modified at any time after
- * the iterator is created, in any way except through the iterator's own
- * {@code remove} method, the iterator will throw a
- * {@link ConcurrentModificationException}.  Thus, in the face of concurrent
- * modification, the iterator fails quickly and cleanly, rather than risking
- * arbitrary, non-deterministic behavior at an undetermined time in the
- * future.
- *
- * <p>Note that the fail-fast behavior of an iterator cannot be guaranteed
- * as it is, generally speaking, impossible to make any hard guarantees in the
- * presence of unsynchronized concurrent modification.  Fail-fast iterators
- * throw {@code ConcurrentModificationException} on a best-effort basis.
- * Therefore, it would be wrong to write a program that depended on this
- * exception for its correctness: <i>the fail-fast behavior of iterators
- * should be used only to detect bugs.</i>
- *
- * <p>This class is a member of the
- * <a href="{@docRoot}/java.base/java/util/package-summary.html#CollectionsFramework">
- * Java Collections Framework</a>.
- *
- * @param <K> the type of keys maintained by this map
- * @param <V> the type of mapped values
- *
- * @author  Doug Lea
- * @author  Josh Bloch
- * @author  Arthur van Hoff
- * @author  Neal Gafter
- * @see     Object#hashCode()
- * @see     Collection
- * @see     Map
- * @see     TreeMap
- * @see     Hashtable
- * @since   1.2
- */
-public class ArrayBinHashMap<K,V> extends AbstractMap<K,V>
+public class ArrayBinHashMap<K,V> extends AbstractMap<K,V> // TODO maybe rename to have just PutGet and maybe Iterate
     implements Map<K,V>, Cloneable, Serializable {
 
     @Serial
     private static final long serialVersionUID = 362498820763181265L;
-
-    /*
-     * Implementation notes.
-     *
-     * This map usually acts as a binned (bucketed) hash table, but
-     * when bins get too large, they are transformed into bins of
-     * TreeNodes, each structured similarly to those in
-     * java.util.TreeMap. Most methods try to use normal bins, but
-     * relay to TreeNode methods when applicable (simply by checking
-     * instanceof a node).  Bins of TreeNodes may be traversed and
-     * used like any others, but additionally support faster lookup
-     * when overpopulated. However, since the vast majority of bins in
-     * normal use are not overpopulated, checking for existence of
-     * tree bins may be delayed in the course of table methods.
-     *
-     * Tree bins (i.e., bins whose elements are all TreeNodes) are
-     * ordered primarily by hashCode, but in the case of ties, if two
-     * elements are of the same "class C implements Comparable<C>",
-     * type then their compareTo method is used for ordering. (We
-     * conservatively check generic types via reflection to validate
-     * this -- see method comparableClassFor).  The added complexity
-     * of tree bins is worthwhile in providing worst-case O(log n)
-     * operations when keys either have distinct hashes or are
-     * orderable, Thus, performance degrades gracefully under
-     * accidental or malicious usages in which hashCode() methods
-     * return values that are poorly distributed, as well as those in
-     * which many keys share a hashCode, so long as they are also
-     * Comparable. (If neither of these apply, we may waste about a
-     * factor of two in time and space compared to taking no
-     * precautions. But the only known cases stem from poor user
-     * programming practices that are already so slow that this makes
-     * little difference.)
-     *
-     * Because TreeNodes are about twice the size of regular nodes, we
-     * use them only when bins contain enough nodes to warrant use
-     * (see TREEIFY_THRESHOLD). And when they become too small (due to
-     * removal or resizing) they are converted back to plain bins.  In
-     * usages with well-distributed user hashCodes, tree bins are
-     * rarely used.  Ideally, under random hashCodes, the frequency of
-     * nodes in bins follows a Poisson distribution
-     * (http://en.wikipedia.org/wiki/Poisson_distribution) with a
-     * parameter of about 0.5 on average for the default resizing
-     * threshold of 0.75, although with a large variance because of
-     * resizing granularity. Ignoring variance, the expected
-     * occurrences of list size k are (exp(-0.5) * pow(0.5, k) /
-     * factorial(k)). The first values are:
-     *
-     * 0:    0.60653066
-     * 1:    0.30326533
-     * 2:    0.07581633
-     * 3:    0.01263606
-     * 4:    0.00157952
-     * 5:    0.00015795
-     * 6:    0.00001316
-     * 7:    0.00000094
-     * 8:    0.00000006
-     * more: less than 1 in ten million
-     *
-     * The root of a tree bin is normally its first node.  However,
-     * sometimes (currently only upon Iterator.remove), the root might
-     * be elsewhere, but can be recovered following parent links
-     * (method TreeNode.root()).
-     *
-     * All applicable internal methods accept a hash code as an
-     * argument (as normally supplied from a public method), allowing
-     * them to call each other without recomputing user hashCodes.
-     * Most internal methods also accept a "tab" argument, that is
-     * normally the current table, but may be a new or old one when
-     * resizing or converting.
-     *
-     * When bin lists are treeified, split, or untreeified, we keep
-     * them in the same relative access/traversal order (i.e., field
-     * Node.next) to better preserve locality, and to slightly
-     * simplify handling of splits and traversals that invoke
-     * iterator.remove. When using comparators on insertion, to keep a
-     * total ordering (or as close as is required here) across
-     * rebalancings, we compare classes and identityHashCodes as
-     * tie-breakers.
-     *
-     * The use and transitions among plain vs tree modes is
-     * complicated by the existence of subclass LinkedHashMapCpy. See
-     * below for hook methods defined to be invoked upon insertion,
-     * removal and access that allow LinkedHashMapCpy internals to
-     * otherwise remain independent of these mechanics. (This also
-     * requires that a map instance be passed to some utility methods
-     * that may create new nodes.)
-     *
-     * The concurrent-programming-like SSA-based coding style helps
-     * avoid aliasing errors amid all of the twisty pointer operations.
-     */
 
     /**
      * The default initial capacity - MUST be a power of two.
@@ -871,32 +682,6 @@ public class ArrayBinHashMap<K,V> extends AbstractMap<K,V>
     }
 
     /**
-     * Replaces all linked nodes in bin at index for given hash unless
-     * table is too small, in which case resizes instead.
-     */
-    // TODO uncomment to handle trees
-//    final void treeifyBin(Node<K,V>[] tab, int hash) {
-//        int n, index; Node<K,V> e;
-//        if (tab == null || (n = tab.length) < MIN_TREEIFY_CAPACITY)
-//            resize();
-//        else if ((e = tab[index = (n - 1) & hash]) != null) {
-//            TreeNode<K,V> hd = null, tl = null;
-//            do {
-//                TreeNode<K,V> p = replacementTreeNode(e, null);
-//                if (tl == null)
-//                    hd = p;
-//                else {
-//                    p.prev = tl;
-//                    tl.next = p;
-//                }
-//                tl = p;
-//            } while ((e = e.next) != null);
-//            if ((tab[index] = hd) != null)
-//                hd.treeify(tab);
-//        }
-//    }
-
-    /**
      * Copies all of the mappings from the specified map to this map.
      * These mappings will replace any mappings that this map had for
      * any of the keys currently in the specified map.
@@ -906,74 +691,6 @@ public class ArrayBinHashMap<K,V> extends AbstractMap<K,V>
      */
     public void putAll(Map<? extends K, ? extends V> m) {
         putMapEntries(m, true);
-    }
-
-    /**
-     * Removes the mapping for the specified key from this map if present.
-     *
-     * @param  key key whose mapping is to be removed from the map
-     * @return the previous value associated with {@code key}, or
-     *         {@code null} if there was no mapping for {@code key}.
-     *         (A {@code null} return can also indicate that the map
-     *         previously associated {@code null} with {@code key}.)
-     */
-    public V remove(Object key) {
-        throw new UnsupportedOperationException("Bad Thing!");// TODO uncomment if put & get jmh tests have promising results
-//        Node<K,V> e;
-//        return (e = removeNode(hash(key), key, null, false, true)) == null ?
-//            null : e.value;
-    }
-
-    /**
-     * Implements Map.remove and related methods.
-     *
-     * @param hash hash for key
-     * @param key the key
-     * @param value the value to match if matchValue, else ignored
-     * @param matchValue if true only remove if value is equal
-     * @param movable if false do not move other nodes while removing
-     * @return the node, or null if none
-     */
-    final Node<K,V> removeNode(int hash, Object key, Object value,
-                               boolean matchValue, boolean movable) {
-        throw new UnsupportedOperationException("Bad Thing!");// TODO uncomment if put & get jmh tests have promising results
-//        Node<K,V>[] tab; Node<K,V> p; int n, index;
-//        if ((tab = table) != null && (n = tab.length) > 0 &&
-//            (p = tab[index = (n - 1) & hash]) != null) {
-//            Node<K,V> node = null, e; K k; V v;
-//            if (p.hash == hash &&
-//                ((k = p.key) == key || (key != null && key.equals(k))))
-//                node = p;
-//            else if ((e = p.next) != null) {
-//                if (p instanceof TreeNode)
-//                    node = ((TreeNode<K,V>)p).getTreeNode(hash, key);
-//                else {
-//                    do {
-//                        if (e.hash == hash &&
-//                            ((k = e.key) == key ||
-//                             (key != null && key.equals(k)))) {
-//                            node = e;
-//                            break;
-//                        }
-//                        p = e;
-//                    } while ((e = e.next) != null);
-//                }
-//            }
-//            if (node != null && (!matchValue || (v = node.value) == value ||
-//                                 (value != null && value.equals(v)))) {
-//                if (node instanceof TreeNode)
-//                    ((TreeNode<K,V>)node).removeTreeNode(this, tab, movable);
-//                else if (node == p)
-//                    tab[index] = node.next;
-//                else
-//                    p.next = node.next;
-//                ++modCount;
-//                --size;
-//                afterNodeRemoval(node);
-//                return node;
-//            }
-//        }
-//        return null;
     }
 
     /**
@@ -988,29 +705,6 @@ public class ArrayBinHashMap<K,V> extends AbstractMap<K,V>
             for (int i = 0; i < tab.length; ++i)
                 tab[i] = null;
         }
-    }
-
-    /**
-     * Returns {@code true} if this map maps one or more keys to the
-     * specified value.
-     *
-     * @param value value whose presence in this map is to be tested
-     * @return {@code true} if this map maps one or more keys to the
-     *         specified value
-     */
-    public boolean containsValue(Object value) {
-        throw new UnsupportedOperationException("Bad Thing!");// TODO uncomment if jmh get/put is promising
-//        Node<K,V>[][] tab; V v;
-//        if ((tab = table) != null && size > 0) {
-//            for (Node<K,V>[] e : tab) {
-//                for (; e != null; e = e.next) {
-//                    if ((v = e.value) == value ||
-//                        (value != null && value.equals(v)))
-//                        return true;
-//                }
-//            }
-//        }
-//        return false;
     }
 
     /**
@@ -2751,7 +2445,7 @@ public class ArrayBinHashMap<K,V> extends AbstractMap<K,V>
         out.printf("    heap size: %d(bytes), avg bytes per entry: %d, table len: %d%n",
                 size, bytesPer, table.length);
         long[] types = entryTypes();
-        out.printf("    values: %d, empty: %d%n", types[0], types[1]);
+        out.printf("    values: %d, empty: %d%n", types[1], types[0]);
         int[] rehashes = entryRehashes();
         out.printf("    hash collision histogram: max: %d, %s%n",
                 rehashes.length - 1, Arrays.toString(rehashes));
@@ -2806,13 +2500,11 @@ public class ArrayBinHashMap<K,V> extends AbstractMap<K,V>
         return acc;
     }
 
-    private static boolean hasObjectSize = false;
     private static Method mObjectSize = getObjectSizeMethod();
 
     private static Method getObjectSizeMethod() {
         try {
             Method m = Objects.class.getDeclaredMethod("getObjectSize", Object.class);
-            hasObjectSize = true;
             return m;
         } catch (NoSuchMethodException nsme) {
             return null;

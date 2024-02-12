@@ -256,7 +256,7 @@ public class HashMapCpy<K,V> extends AbstractMap<K,V>
      * tree removal about conversion back to plain bins upon
      * shrinkage.
      */
-    static final int TREEIFY_THRESHOLD = 8;
+    static final int TREEIFY_THRESHOLD = 10000; // TODO change back to 8
 
     /**
      * The bin count threshold for untreeifying a (split) bin during a

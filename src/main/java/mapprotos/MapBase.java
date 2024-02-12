@@ -47,9 +47,9 @@ import java.util.stream.IntStream;
 public class MapBase {
 
     @Param({
-//              "11",
+              "11",
 //             "767",
-        "1536" // Divisible by 3 fields and 4 bytes per field, per table Object overhead should be negligible. Half way to next resize.
+//        "1536" // Divisible by 3 fields and 4 bytes per field, per table Object overhead should be negligible. Half way to next resize.
 //        "50331600", // the one just below this one seems like capacity is too big.  So try a little less than halfway to see the size & performance consequences
 //        "50331648", // this is halfway between two powers of 2
 //         "1000000"
@@ -66,8 +66,8 @@ public class MapBase {
 
     @Param(value = {
 //        "newhash.OpenHashMap",
-        "mapprotos.HashMapCpy",
-        "mapprotos.ArrayBinHashMap",
+        "mapprotos.HashMapJustPutGet",
+//        "mapprotos.ArrayBinHashMap",
 //        "mapprotos.ArrayBinLessIndexHashMap",
 //            "mapprotos.XHashMap",
 //            "org.openjdk.bench.valhalla.corelibs.mapprotos.HashMap",
@@ -83,11 +83,9 @@ public class MapBase {
     public void initIteration(int size) {
         System.out.println("CALLING MapBase.initIteration seed:" + seed);
         Integer[] all;
-        if (seed++ != 0) {
-            rnd = new Random(seed);
-            all = rnd.ints().distinct().limit(size * 2).boxed().toArray(Integer[]::new);
-            Collections.shuffle(Arrays.asList(all), rnd);
-        }
+        rnd = new Random(seed++);
+        all = rnd.ints().distinct().limit(size * 2).boxed().toArray(Integer[]::new);
+        Collections.shuffle(Arrays.asList(all), rnd);
         keys = Arrays.copyOfRange(all, 0, size);
         nonKeys = Arrays.copyOfRange(all, size, size * 2);
     }
@@ -98,6 +96,7 @@ public class MapBase {
             m.invoke(map, System.out);
         } catch (Throwable nsme) {
             System.out.println("Stats not available:");
+            throw new IllegalStateException(nsme);
         }
     }
 }
