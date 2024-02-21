@@ -32,7 +32,6 @@ import java.util.function.Consumer;
 
 public class HashMapJustPutGet<K,V> extends AbstractMap<K,V> { // TODO maybe add "iterate" to name
 
-// TODO remove all these
 
     /**
      * The default initial capacity - MUST be a power of two.
@@ -55,7 +54,7 @@ public class HashMapJustPutGet<K,V> extends AbstractMap<K,V> { // TODO maybe add
      * Basic hash bin node, used for most entries.  (See below for
      * TreeNode subclass, and in LinkedHashMapCpy for its Entry subclass.)
      */
-    static class Node<K,V> implements Map.Entry<K,V> {
+    static class Node<K,V> implements Entry<K,V> {
         final int hash;
         final K key;
         V value;
@@ -137,7 +136,7 @@ public class HashMapJustPutGet<K,V> extends AbstractMap<K,V> { // TODO maybe add
      * Holds cached entrySet(). Note that AbstractMap fields are used
      * for keySet() and values().
      */
-    transient Set<Map.Entry<K,V>> entrySet;
+    transient Set<Entry<K,V>> entrySet;
 
     /**
      * The number of key-value mappings contained in this map.
@@ -363,11 +362,7 @@ public class HashMapJustPutGet<K,V> extends AbstractMap<K,V> { // TODO maybe add
         Node<K,V>[] newTab = (Node<K,V>[])new Node[newCap];
         table = newTab;
         if (oldTab != null) {
-            for (int j = 0; j < oldCap; ++j) {
-                if (oldTab[j] != null) {
-                    throw new IllegalStateException("resize occurred");
-                }
-            }
+            throw new IllegalStateException("resize occurred");
         }
         return newTab;
     }
@@ -532,12 +527,10 @@ public class HashMapJustPutGet<K,V> extends AbstractMap<K,V> { // TODO maybe add
         int[] counts = new int[size];
         Node<K,V>[] tab = table;
         for (Node<K,V> te : tab) {
-            if (te != null) { // TODO changed but not verified
-                int count = 0;
-                for (Node<K, V> e = te.next; e != null; e = e.next)
-                    count++;
-                counts[count]++;
-            }
+            int count = 0;
+            for (Node<K, V> e = te; e != null; e = e.next)
+                count++;
+            counts[count]++;
         }
 
         int i;

@@ -40,11 +40,6 @@ public class GetX extends MapBase {
     Map<Integer, Integer> map;
     Integer[] mixed;
 
-    @Setup(Level.Trial)
-    public void setupTrial() {
-        super.initIteration(size);
-    }
-
     @Setup(Level.Iteration)
     public void setupIteration() {
         super.initIteration(size);

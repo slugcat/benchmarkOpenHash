@@ -22,14 +22,7 @@
  */
 package mapprotos;
 
-import org.openjdk.jmh.annotations.BenchmarkMode;
-import org.openjdk.jmh.annotations.Fork;
-import org.openjdk.jmh.annotations.Mode;
-import org.openjdk.jmh.annotations.OutputTimeUnit;
-import org.openjdk.jmh.annotations.Param;
-import org.openjdk.jmh.annotations.Scope;
-import org.openjdk.jmh.annotations.State;
-import org.openjdk.jmh.annotations.Warmup;
+import org.openjdk.jmh.annotations.*;
 
 import java.lang.reflect.Method;
 import java.util.Arrays;
@@ -37,21 +30,22 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.IntStream;
 
 @Fork(value = 1, jvmArgs = {"-XX:+EnablePrimitiveClasses", /*TODO comment out "-Xms24g", "-Xmx24g", "-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:5005"*/})
 @OutputTimeUnit(TimeUnit.MICROSECONDS)
 @BenchmarkMode(Mode.AverageTime)
-@Warmup(iterations=3)
+@Warmup(iterations=5)
+@Measurement(iterations=10)
 @State(Scope.Thread)
 public class MapBase {
 
     @Param({
-              "11",
+//              "11",
 //             "767",
-//        "1536" // Divisible by 3 fields and 4 bytes per field, per table Object overhead should be negligible. Half way to next resize.
+//        "1536", // Divisible by 3 fields and 4 bytes per field, per table Object overhead should be negligible. Half way to next resize.
 //        "50331600", // the one just below this one seems like capacity is too big.  So try a little less than halfway to see the size & performance consequences
 //        "50331648", // this is halfway between two powers of 2
+        "131072",
 //         "1000000"
 //     "100663296", //Used this to fill cpu caches with other data to get() would need to fetch from memory.
 //     "201326592", // Didn't use: Too much memory
@@ -66,8 +60,8 @@ public class MapBase {
 
     @Param(value = {
 //        "newhash.OpenHashMap",
+        "mapprotos.ArrayBinHashMapJustPutGet",
         "mapprotos.HashMapJustPutGet",
-//        "mapprotos.ArrayBinHashMap",
 //        "mapprotos.ArrayBinLessIndexHashMap",
 //            "mapprotos.XHashMap",
 //            "org.openjdk.bench.valhalla.corelibs.mapprotos.HashMap",
