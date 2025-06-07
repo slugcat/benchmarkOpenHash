@@ -27,30 +27,29 @@ import org.openjdk.jmh.annotations.*;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
-@Fork(value = 1, jvmArgs = {/*"-XX:+EnablePrimitiveClasses",*/ /*TODO comment out "-Xms24g", "-Xmx24g", */ /*"-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:5005"*/})
+@Fork(value = 1, jvmArgs = {/*"-XX:+EnablePrimitiveClasses",*/ /*TODO comment out "-Xms24g", "-Xmx24g", "-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:5005"*/})
 @OutputTimeUnit(TimeUnit.MICROSECONDS)
 @BenchmarkMode(Mode.AverageTime)
-@Warmup(iterations=5)
-@Measurement(iterations=10)
+@Warmup(iterations=4)
+@Measurement(iterations=4)
 @State(Scope.Thread)
-public class MapBase {
+public class ArrayOfNodeListsBase {
 
     @Param({
-//        "11",
-//        "767",
-//        "1536", // Divisible by 3 fields and 4 bytes per field, per table Object overhead should be negligible. Half way to next resize.
-        "131072",
-//        "1000000",
-//        "50331600", // the one just below this one seems like capacity is too big.  So try a little less than halfway to see the size & performance consequences
+        "1:1000"
+//              "11",
+//             "767",
+//        "1536",
+//        "50331600",
 //        "50331648", // this is halfway between two powers of 2
-//        "100663296", //Used this to fill cpu caches with other data to get() would need to fetch from memory.
-//        "201326592", // Didn't use: Too much memory
+//        "131072",
+//         "1000000"
+//     "100663296", //Used this to fill cpu caches with other data to get() would need to fetch from memory.
     })
-    public int size;
+    String numListsAndNodesPerList;
 
     // All trials have the same seed for each iteration.  However, each iteration has a different
     // seed than its other iterations.  In this way it is hoped that each trial is more
@@ -60,38 +59,37 @@ public class MapBase {
 
     @Param(value = {
 //        "newhash.OpenHashMap",
-        "newhash.IdentityHashMapOrig",
-        "newhash.IdentityHashMapFibonacci",
-//        "mapprotos.ArrayBinHashMapJustPutGet",
-//        "mapprotos.HashMapJustPutGet",
+
+        "mapprotos.ArrayOfArraysOfPrimitive",
+        "mapprotos.ArrayOfArraysOfPointer",
+        "mapprotos.ArrayOfLinkedList",
+
 //        "mapprotos.ArrayBinLessIndexHashMap",
 //            "mapprotos.XHashMap",
 //            "org.openjdk.bench.valhalla.corelibs.mapprotos.HashMap",
 //            "org.openjdk.bench.valhalla.corelibs.mapprotos.XHashMap",
 //            "java.util.HashMap0",
     })
-    public String mapType;
+    public String arrayOfNodeListsType;
 
     public Random rnd;
     public Integer[] keys;
     public Integer[] nonKeys;
 
     public void initIteration(int size) {
-        System.gc();
-        System.gc();
         System.out.println("CALLING MapBase.initIteration seed:" + seed);
         Integer[] all;
         rnd = new Random(seed++);
-        all = rnd.ints().distinct().limit(size * 2).boxed().toArray(Integer[]::new);
+        all = rnd.ints().distinct().limit(size * 2L).boxed().toArray(Integer[]::new);
         Collections.shuffle(Arrays.asList(all), rnd);
         keys = Arrays.copyOfRange(all, 0, size);
         nonKeys = Arrays.copyOfRange(all, size, size * 2);
     }
 
-    void TearDown(Map<Integer, Integer> map) {
+    void TearDown(ArrayOfNodeLists nodeLists) {
         try {
-            Method m = map.getClass().getMethod("dumpStats", java.io.PrintStream.class);
-            m.invoke(map, System.out);
+            Method m = nodeLists.getClass().getMethod("dumpStats", java.io.PrintStream.class);
+            m.invoke(nodeLists, System.out);
         } catch (Throwable nsme) {
             System.out.println("Stats not available:");
             throw new IllegalStateException(nsme);

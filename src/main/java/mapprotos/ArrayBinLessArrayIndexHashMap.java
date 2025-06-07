@@ -277,7 +277,7 @@ public class ArrayBinLessArrayIndexHashMap<K,V> extends AbstractMap<K,V>
      * Basic hash bin node, used for most entries.  (See below for
      * TreeNode subclass, and in LinkedHashMapCpy for its Entry subclass.)
      */
-    static /* TODO */  primitive  class Node<K,V> implements Entry<K,V> {
+    static /* TODO   primitive*/  class Node<K,V> implements Entry<K,V> {
         final int hash;
         final K key;
         final V value;

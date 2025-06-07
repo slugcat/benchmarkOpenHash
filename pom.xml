@@ -177,7 +177,7 @@ THE POSSIBILITY OF SUCH DAMAGE.
                     <artifactId>maven-surefire-plugin</artifactId>
                     <version>2.22.2</version>
                     <configuration>
-                        <argLine>-XX:+EnablePrimitiveClasses</argLine>
+<!-- TODO enable to work with Valhalla release                       <argLine>-XX:+EnablePrimitiveClasses</argLine>-->
                     </configuration>
                 </plugin>
             </plugins>

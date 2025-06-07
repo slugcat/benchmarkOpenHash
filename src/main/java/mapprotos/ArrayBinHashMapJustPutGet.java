@@ -54,7 +54,7 @@ public class ArrayBinHashMapJustPutGet<K,V> extends AbstractMap<K,V> // TODO may
      * Basic hash bin node, used for most entries.  (See below for
      * TreeNode subclass, and in LinkedHashMapCpy for its Entry subclass.)
      */
-    static class Node<K,V> implements Entry<K,V> {
+    static /* TODO primitive */ class Node<K,V> implements Entry<K,V> {
         final int hash;
         final K key;
         final V value;
@@ -64,6 +64,7 @@ public class ArrayBinHashMapJustPutGet<K,V> extends AbstractMap<K,V> // TODO may
         //  as a sentinel like this constant, and it did not leak out of its java OOB class, it seems harmless.
         //  Using this facility Node can be generic, since ABSENT would be in the proper class.  The alternative used here
         //  requires any returned key to be cast (at some runtime overhead) whenever it is returned :-(.
+        // Alternatively, take an argument in the constructor which returns a singleton sentinel Object of the key class that serves to indicate null.
         static final Object NO_KEY = new Object();
         static final Node EMPTY = new Node(0, null, null) /* TODO uncomment MaskedHashKeyValue.default*/;
 
@@ -237,13 +238,15 @@ public class ArrayBinHashMapJustPutGet<K,V> extends AbstractMap<K,V> // TODO may
     }
 
     public V get(Object key) {
-
         // not calling getNode and wrapping the Node in a NodeRef saves a huge amount of time.
-        Object[] tab; Object binObj, e; int n, hash; K k;
+        Node<K,V>[][] tab;
+        Node<K, V>[] nodes;
+        int n, hash;
+        K k;
         if ((tab = table) != null && (n = tab.length) > 0 &&
-            (binObj = tab[(n - 1) & (hash = hash(key))]) != null) {
-            Node<K,V>[] nodes = (Node<K, V>[]) binObj;
-            for (int b = 0; b < nodes.length; b++) {
+            (nodes = tab[(n - 1) & (hash = hash(key))]) != null) {
+          final int length = nodes.length;
+            for (int b = 0; b < length; b++) {
                 if (nodes[b].hash == hash &&
                     ((k = nodes[b].key) == key || (key != null && key.equals(k))))
                     return nodes[b].value;

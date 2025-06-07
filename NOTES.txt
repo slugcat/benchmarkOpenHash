@@ -1,5 +1,36 @@
 Parameters (like the value of @Params) is put in /META-INF/BenchmarkList by processing annotations at compile time.  It seems that rebuilding does not suffice to rebuild this in the .jar.  Doing a 'mvn clean' did seem to update the values in /META-INF/BenchmarkList.
 
-Doing a 'mvn test' does not currently run the test.  To do that run the jar file from intellij or command line:
+Doing a 'mvn test' does not currently run the jmh test.  To do that run the jar file from intellij or command line:
 
 $JAVA_HOME/bin/java -XX:+EnablePrimitiveClasses -jar target/benchmarks.jar  |& tee /tmp/benchmark.out
+
+Debugging add:
+
+-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005
+
+########################################
+
+This looks to build and run a test:
+
+mvn clean && mvn package && $JAVA_HOME/bin/java -XX:-Inline -XX:+EnablePrimitiveClasses -jar /home/d/repo/hash/benchmark/target/benchmarks.jar -f mapprotos.GetArrayOfNodeListsTest -e mapprotos.HashMapBench.put -e mapprotos.HashMapBench.putAllWithBigMapToEmptyMap -e mapprotos.HashMapBench.putAllWithBigMapToNonEmptyMap -e mapprotos.HashMapToArray.testKeySetToArray -e mapprotos.HashMapToArray.testKeySetToArrayTyped -e mapprotos.HashMapToArray.testValuesToArray -e mapprotos.HashMapToArray.testValuesToArrayTyped -e mapprotos.PutX.put -e mapprotos.PutX.putSized -e mapprotos.ReplX.replace -e mapprotos.WalkX.sumIterator -e mapprotos.WalkX.sumIteratorHidden -prof perfasm |& (d=$(date "+%m%d-%H:%M"); tee /d/tmp/benchmark.$d "+%m%d-%H:%M"; echo $d)
+
+########################################
+
+It is better to assign a nodes[b] to a variable, node, and use node?  You would think it might be because you would expect that the node var would directly reference the array cell, since primitives are immutable, so direct references are safe.  The numbers below show that at least in this case it is not better.  I didn't make a separate class so instead directly comparing the performace of var vs no-var these two are compared to the unchanged linked list approach and the ratios are compared.
+
+   Node-Var
+GetX.getHit  mapprotos.ArrayBinHashMapJustPutGet  150000  avgt   10   7896.557 ± 1039.261  us/op
+GetX.getHit          mapprotos.HashMapJustPutGet  150000  avgt   10   6938.297 ± 2820.187  us/op
+7896.557/ 6938.297
+1.13811170089720863779
+
+
+No NodeVar
+GetX.getHit  mapprotos.ArrayBinHashMapJustPutGet  150000  avgt   10   7316.623 ±  360.721  us/op
+GetX.getHit          mapprotos.HashMapJustPutGet  150000  avgt   10   6995.497 ± 2871.446  us/op
+7316.623/ 6995.497
+1.04590467267729512284
+
+
+1.14 > 1.06 So it is better to not dereference the node!
+

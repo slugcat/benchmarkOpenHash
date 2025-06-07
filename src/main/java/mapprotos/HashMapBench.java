@@ -47,7 +47,7 @@ import static java.util.stream.Collectors.toMap;
  */
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
-@Fork(value = 1, jvmArgs = {"-XX:+EnablePrimitiveClasses"/*, "-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:5005"*/})
+@Fork(value = 1, jvmArgs = {/*"-XX:+EnablePrimitiveClasses",*/ "-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:5005"})
 // @Measurement(iterations = 2) // TODO change iterations
 // TODO run some test such that some thread(s) are hitting the cpu caches (does each cpu ever have its own cache?) so that the Map performance is more realistically impacted by not being in cache.
 @State(Scope.Thread)
@@ -61,8 +61,10 @@ public class HashMapBench {
     @Param(value = {
 //            "org.openjdk.bench.valhalla.corelibs.mapprotos.HashMap",
 //            "mapprotos.XHashMap",
-            "newhash.OpenHashMap",
-            "java.util.HashMap",
+//            "newhash.OpenHashMap",
+//            "java.util.HashMap",
+        // TODO uncomment "newhash.IdentityHashMapOrig",
+        "newhash.IdentityHashMapFibonacci",
         })
     private String mapType;
 

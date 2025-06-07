@@ -43,7 +43,7 @@ public class GetX extends MapBase {
     @Setup(Level.Iteration)
     public void setupIteration() {
         super.initIteration(size);
-        float loadFactor = 8.0f;
+        float loadFactor = 0.75f;
         int origSize = (int) (size / loadFactor) + 1;
         try {
             Class<?> mapClass = Class.forName(mapType);
@@ -72,7 +72,7 @@ public class GetX extends MapBase {
 
     Map<Integer, Integer> newInstance(Class<?> mapClass, int size, float loadFactor) {
         try {
-            return (Map<Integer, Integer>)mapClass.getConstructor(int.class, float.class).newInstance(size, loadFactor);
+            return (Map<Integer, Integer>)mapClass.getConstructor(int.class /* TODO , HashMap has this IdentityHashMap does not float.class*/).newInstance(size/* TODO, loadFactor*/);
         } catch (Exception ex) {
             throw new RuntimeException("failed", ex);
         }
