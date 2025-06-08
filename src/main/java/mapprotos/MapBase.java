@@ -31,7 +31,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
-@Fork(value = 1, jvmArgs = {/*"-XX:+EnablePrimitiveClasses",*/ /*TODO comment out "-Xms24g", "-Xmx24g", */ /*"-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:5005"*/})
+@Fork(value = 1, jvmArgs = {/*"-XX:+EnablePrimitiveClasses",*/ /*TODO comment out "-Xms24g", "-Xmx24g", */ "-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:5005"/**/})
 @OutputTimeUnit(TimeUnit.MICROSECONDS)
 @BenchmarkMode(Mode.AverageTime)
 @Warmup(iterations=5)

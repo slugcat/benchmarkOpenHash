@@ -63,7 +63,7 @@ public class HashMapBench {
 //            "mapprotos.XHashMap",
 //            "newhash.OpenHashMap",
 //            "java.util.HashMap",
-        // TODO uncomment "newhash.IdentityHashMapOrig",
+        "newhash.IdentityHashMapOrig",
         "newhash.IdentityHashMapFibonacci",
         })
     private String mapType;
